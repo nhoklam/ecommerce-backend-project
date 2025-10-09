@@ -1,0 +1,47 @@
+# src/main/resources/application-dev.yml
+
+server:
+  port: 8080
+
+spring:
+  # ... cấu hình datasource và jpa của bạn ...
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecommerce_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: nhoklam271 # <-- NHỚ THAY MẬT KHẨU CỦA BẠN
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # ==========================================================
+  # == CẤU HÌNH MAILTRAP CHO SPRING BOOT ==
+  # ==========================================================
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: "662fe9690ba83b"
+    password: "ba28fabb8f56a6"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# ... cấu hình jwt và logging của bạn ...
+jwt:
+  secret: "VGhpc0lzTXlTdXBlckxvbmdBbmRTZWN1cmVTZWNyZXRLZXlGb3JFY29tbWVyY2VQcm9qZWN0MjAyNQ=="
+  expiration: 86400000
+
+logging:
+  level:
+    com.nhom13.ecommerce: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG

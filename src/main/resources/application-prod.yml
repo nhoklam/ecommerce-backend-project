@@ -1,0 +1,58 @@
+# ===================================================================
+# PRODUCTION-SPECIFIC PROPERTIES (Profile: prod)
+# ===================================================================
+server:
+  # Sử dụng biến môi trường PORT do nền tảng cung cấp (ví dụ: Heroku)
+  # Nếu không có, sẽ dùng cổng 8080
+  port: ${PORT:8080}
+
+spring:
+  # Cấu hình datasource sử dụng biến môi trường.
+  # KHÔNG BAO GIỜ hardcode thông tin nhạy cảm ở đây.
+  datasource:
+    url: ${JDBC_DATABASE_URL} # Biến môi trường do Heroku/Cloud Platform cung cấp
+    username: ${JDBC_DATABASE_USERNAME}
+    password: ${JDBC_DATABASE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Cấu hình connection pool (HikariCP) cho hiệu năng cao
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      # QUAN TRỌNG: Dùng 'validate' hoặc 'none' trong production.
+      # 'validate': Kiểm tra schema có khớp với entity không, nếu không sẽ báo lỗi khi khởi động.
+      # Điều này ngăn việc vô tình thay đổi hoặc xóa dữ liệu.
+      ddl-auto: validate
+    # Tắt việc hiển thị SQL trong production để tăng hiệu năng và giữ log sạch sẽ
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# Khóa bí mật JWT BẮT BUỘC phải được cung cấp qua biến môi trường
+jwt:
+  secret: ${JWT_SECRET} # Sẽ báo lỗi nếu biến môi trường này không được thiết lập
+  expiration: ${JWT_EXPIRATION:86400000} # Có thể cấu hình qua env, mặc định là 24h
+
+# Cấu hình mail cho production, lấy từ biến môi trường
+spring.mail:
+  host: ${MAIL_HOST}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
+
+# Cấu hình logging cho production, ghi ra file
+logging:
+  level:
+    # Mức log mặc định là INFO, không cần quá chi tiết
+    root: INFO
+    com.nhom13.ecommerce: INFO
+  file:
+    # Ghi log ra file để có thể kiểm tra lại khi cần
+    name: logs/ecommerce-backend.log

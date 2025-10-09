@@ -1,0 +1,26 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true # <-- THÊM DÒNG NÀY VÀO ĐẦU
+
+  # Cấu hình mail giả
+  mail:
+    host: localhost
+    port: 25
+    username: "testuser"
+    password: "testpassword"
+
+  # Cấu hình datasource trong bộ nhớ (H2)
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
+# Cung cấp giá trị giả cho JWT
+jwt:
+  secret: "VGhpcyBJcyBBIFJhbmRvbVNlY3JldEtleUZvclRlc3RpbmdQdXJwb3Nlc09ubHlEb05vdFVzZUluUHJvZHVjdGlvbg=="
+  expiration: 86400000
