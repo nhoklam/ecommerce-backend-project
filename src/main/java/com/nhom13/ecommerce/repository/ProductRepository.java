@@ -35,4 +35,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByNameContainingIgnoreCaseAndIsActiveTrue(String name);
     
     boolean existsBySku(String sku);
+
+    // Thêm phương thức bị thiếu
+    List<Product> findByIsFeaturedTrueAndIsActiveTrue();
 }

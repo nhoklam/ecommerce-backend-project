@@ -3,7 +3,7 @@ package com.nhom13.ecommerce.service;
 import com.nhom13.ecommerce.dto.OrderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Value; // Đảm bảo @Value được import
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class EmailService {
     
     @Value("${spring.mail.username}")
     private String fromEmail;
-    
+
     public void sendOrderConfirmation(String toEmail, OrderDTO order) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -56,7 +56,8 @@ public class EmailService {
         content.append("Order ID: #").append(order.getId()).append("\n");
         content.append("Total Amount: $").append(order.getTotalAmount()).append("\n");
         content.append("Status: ").append(order.getStatus()).append("\n");
-        content.append("Shipping Address: ").append(order.getShippingAddress()).append("\n\n");
+        // Cập nhật để sử dụng snapshot
+        content.append("Shipping Address: ").append(order.getShippingAddressSnapshot()).append("\n\n");
         content.append("Thank you for your business!\n\n");
         content.append("Best regards,\nE-commerce Team");
         
@@ -73,5 +74,30 @@ public class EmailService {
         content.append("Best regards,\nE-commerce Team");
         
         return content.toString();
+    }
+
+    // [MỚI] Thêm phương thức sendPasswordResetEmail
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Yêu cầu Đặt lại Mật khẩu E-commerce");
+            
+            // CHÚ Ý: Trong production, hãy trỏ URL này đến frontend của bạn
+            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+
+            message.setText("Chào bạn,\n\n"
+                + "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n"
+                + "Vui lòng nhấp vào đường link sau để đặt lại mật khẩu:\n"
+                + resetUrl + "\n\n"
+                + "Nếu bạn không yêu cầu việc này, vui lòng bỏ qua email này. Link sẽ hết hạn sau 1 giờ.\n\n"
+                + "Trân trọng,\nĐội ngũ E-commerce");
+            
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+        }
     }
 }

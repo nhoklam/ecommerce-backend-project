@@ -17,7 +17,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -29,11 +28,14 @@ public class OrderController {
     
     @PostMapping
     public ResponseEntity<OrderDTO> createOrder(
-            @RequestParam String shippingAddress,
+            //
+            @RequestParam Long addressId, 
+            @RequestParam String paymentMethod, // [MỚI]
             Authentication authentication) {
         
         UserDTO user = userService.getUserByEmail(authentication.getName());
-        OrderDTO order = orderService.createOrder(user.getId(), shippingAddress);
+        //
+        OrderDTO order = orderService.createOrder(user.getId(), addressId, paymentMethod);
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
     
@@ -62,7 +64,7 @@ public class OrderController {
         UserDTO user = userService.getUserByEmail(authentication.getName());
         
         // Check if order belongs to user (unless admin)
-        if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+        if (!order.getUserId().equals(user.getId()) &&!user.getRole().name().equals("ADMIN")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         
@@ -91,6 +93,17 @@ public class OrderController {
             @RequestParam OrderStatus status) {
         
         OrderDTO updatedOrder = orderService.updateOrderStatus(orderId, status);
+        return ResponseEntity.ok(updatedOrder);
+    }
+
+    // [MỚI] API cho Admin
+    @PutMapping("/{orderId}/tracking")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderDTO> updateTracking(
+            @PathVariable Long orderId,
+            @RequestParam String trackingNumber) {
+        
+        OrderDTO updatedOrder = orderService.updateOrderTracking(orderId, trackingNumber);
         return ResponseEntity.ok(updatedOrder);
     }
 }

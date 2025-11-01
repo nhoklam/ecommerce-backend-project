@@ -7,8 +7,15 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "cart_items", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id"}))
+// SỬA LỖI:
+// 1. Xóa uniqueConstraints để Service xử lý logic, tránh lỗi DB với giá trị NULL.
+// 2. Thêm Indexes để tăng tốc độ truy vấn cho cả user và guest.
+@Table(name = "cart_items",
+    indexes = {
+        @Index(name = "idx_cartitem_user_id", columnList = "user_id"),
+        @Index(name = "idx_cartitem_temp_cart_id", columnList = "tempCartId")
+    }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,7 +23,8 @@ import lombok.NoArgsConstructor;
 public class CartItem extends BaseEntity {
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    // SỬA LỖI: Cho phép user_id là NULL (nullable = true) để hỗ trợ giỏ hàng của guest
+    @JoinColumn(name = "user_id", nullable = true) 
     private User user;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -25,4 +33,8 @@ public class CartItem extends BaseEntity {
     
     @Column(nullable = false)
     private Integer quantity;
+
+    // SỬA LỖI: Thêm trường tempCartId để lưu giỏ hàng của guest
+    @Column(name = "tempCartId")
+    private String tempCartId;
 }

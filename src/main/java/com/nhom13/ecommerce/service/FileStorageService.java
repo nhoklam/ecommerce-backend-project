@@ -6,26 +6,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
-
 @Service
 @Slf4j
 public class FileStorageService {
     
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
-    
     private final Path fileStorageLocation;
     
     public FileStorageService() {
         this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
-        
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
@@ -34,8 +30,13 @@ public class FileStorageService {
     }
     
     public String storeFile(MultipartFile file) {
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-        
+        // Thêm kiểm tra null
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName == null) {
+            throw new BadRequestException("File name is null. Cannot store file.");
+        }
+        String fileName = StringUtils.cleanPath(originalFileName);
+
         try {
             if (fileName.contains("..")) {
                 throw new BadRequestException("Sorry! Filename contains invalid path sequence " + fileName);

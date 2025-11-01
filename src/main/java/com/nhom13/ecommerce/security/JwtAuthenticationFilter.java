@@ -1,5 +1,6 @@
 package com.nhom13.ecommerce.security;
 
+import jakarta.annotation.Nonnull; //
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+// [MỚI] Import
+import com.nhom13.ecommerce.service.TokenBlocklistService; 
 
 @Component
 @RequiredArgsConstructor
@@ -23,17 +26,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsServiceImpl userDetailsService;
+
+    // [MỚI] Inject
+    private final TokenBlocklistService tokenBlocklistService; 
     
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, 
+                                    @Nonnull HttpServletResponse response, 
+                                    @Nonnull FilterChain filterChain)
             throws ServletException, IOException {
         
         try {
             String jwt = getJwtFromRequest(request);
-            
+
+            // [MỚI] Kiểm tra blocklist
+            if (StringUtils.hasText(jwt) && tokenBlocklistService.isTokenBlocked(jwt)) {
+                log.warn("Attempted to use a blocked JWT token: {}", jwt);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is blocked (logged out)");
+                return;
+            }
+
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 String username = tokenProvider.getUsernameFromToken(jwt);
-                
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (tokenProvider.validateToken(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authentication = 

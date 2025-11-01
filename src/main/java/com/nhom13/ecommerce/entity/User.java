@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+// import java.util.Set; // [ĐÃ XÓA]
 
 @Entity
 @Table(name = "users")
@@ -49,6 +50,10 @@ public class User extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CartItem> cartItems;
 
+    // [MỚI] Thêm liên kết đến Address
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Address> addresses;
+    
     // --- UserDetails Implementation ---
 
     @Override

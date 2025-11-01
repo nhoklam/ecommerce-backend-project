@@ -11,4 +11,5 @@ public class OrderItemDTO {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
-}
+     private Integer stockQuantity;
+}   

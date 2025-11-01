@@ -1,24 +1,23 @@
-# src/main/resources/application-dev.yml
-
 server:
   port: 8080
 
 spring:
-  # ... cấu hình datasource và jpa của bạn ...
   datasource:
     url: jdbc:mysql://localhost:3306/ecommerce_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: nhoklam271 # <-- NHỚ THAY MẬT KHẨU CỦA BẠN
+    password: nhoklam271 # <-- Mật khẩu của bạn
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      # SỬA LỖI: Đổi từ 'update' sang 'create'
+      # 'create' sẽ luôn xóa và tạo lại CSDL, hoàn hảo cho việc test seeder
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
-
+        dialect: org.hibernate.dialect.MySQLDialect 
+  
   # ==========================================================
   # == CẤU HÌNH MAILTRAP CHO SPRING BOOT ==
   # ==========================================================
@@ -34,7 +33,10 @@ spring:
           starttls:
             enable: true
 
-# ... cấu hình jwt và logging của bạn ...
+# Cấu hình file upload (ví dụ)
+file:
+  upload-dir: "./uploads"
+
 jwt:
   secret: "VGhpc0lzTXlTdXBlckxvbmdBbmRTZWN1cmVTZWNyZXRLZXlGb3JFY29tbWVyY2VQcm9qZWN0MjAyNQ=="
   expiration: 86400000
@@ -45,3 +47,4 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
+

@@ -29,9 +29,10 @@ public class ProductService {
     public ProductDTO createProduct(ProductDTO productDTO) {
         // Validate category exists
         Category category = categoryRepository.findById(productDTO.getCategoryId())
-            .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
+          .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
         
         // Generate SKU if not provided
+        //
         if (productDTO.getSku() == null || productDTO.getSku().isEmpty()) {
             productDTO.setSku(generateSku());
         } else if (productRepository.existsBySku(productDTO.getSku())) {
@@ -42,6 +43,10 @@ public class ProductService {
         mapDtoToEntity(productDTO, product);
         product.setCategory(category);
         product.setIsActive(true);
+        // [MỚI] Khởi tạo giá trị mặc định
+        product.setIsFeatured(productDTO.getIsFeatured()!= null? productDTO.getIsFeatured() : false);
+        product.setAverageRating(0.0);
+        product.setReviewCount(0);
         
         Product savedProduct = productRepository.save(product);
         return convertToDTO(savedProduct);
@@ -50,38 +55,47 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDTO getProductById(Long id) {
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+          .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return convertToDTO(product);
     }
     
     @Transactional(readOnly = true)
     public Page<ProductDTO> getAllProducts(Pageable pageable) {
         return productRepository.findAllActiveProducts(pageable)
-            .map(this::convertToDTO);
+          .map(this::convertToDTO);
     }
     
     @Transactional(readOnly = true)
     public Page<ProductDTO> searchProducts(String name, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         return productRepository.findProductsWithFilters(name, categoryId, minPrice, maxPrice, pageable)
-            .map(this::convertToDTO);
+          .map(this::convertToDTO);
     }
     
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByCategory(Long categoryId) {
         return productRepository.findByCategoryIdAndIsActiveTrue(categoryId)
-            .stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+          .stream()
+          .map(this::convertToDTO)
+          .collect(Collectors.toList());
+    }
+
+    // [MỚI] Lấy sản phẩm nổi bật
+    @Transactional(readOnly = true)
+    public List<ProductDTO> getFeaturedProducts() {
+        return productRepository.findByIsFeaturedTrueAndIsActiveTrue()
+         .stream()
+         .map(this::convertToDTO)
+         .collect(Collectors.toList());
     }
     
     public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+          .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         
         // Check if category exists
         if (!product.getCategory().getId().equals(productDTO.getCategoryId())) {
             Category newCategory = categoryRepository.findById(productDTO.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
+              .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + productDTO.getCategoryId()));
             product.setCategory(newCategory);
         }
         
@@ -90,17 +104,18 @@ public class ProductService {
         return convertToDTO(updatedProduct);
     }
     
+    // Khôi phục phương thức
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+          .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         product.setIsActive(false);
         productRepository.save(product);
     }
     
+    // Khôi phục phương thức
     public void updateStock(Long productId, Integer quantity) {
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
-        
+          .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
         int newStock = product.getStockQuantity() - quantity;
         if (newStock < 0) {
             throw new BadRequestException("Insufficient stock for product: " + product.getName());
@@ -110,6 +125,7 @@ public class ProductService {
         productRepository.save(product);
     }
     
+    // Khôi phục phương thức
     private void mapDtoToEntity(ProductDTO dto, Product product) {
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
@@ -117,9 +133,18 @@ public class ProductService {
         product.setStockQuantity(dto.getStockQuantity());
         product.setSku(dto.getSku());
         product.setImageUrl(dto.getImageUrl());
+        
+        // [MỚI]
+        product.setSpecifications(dto.getSpecifications());
+        
+        // [MỚI] Thêm từ mục 2.4.2 (Featured)
+        if(dto.getIsFeatured()!= null) {
+            product.setIsFeatured(dto.getIsFeatured());
+        }
     }
     
-    private ProductDTO convertToDTO(Product product) {
+    // Chuyển thành public và khôi phục
+    public ProductDTO convertToDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
         dto.setName(product.getName());
@@ -127,13 +152,25 @@ public class ProductService {
         dto.setPrice(product.getPrice());
         dto.setStockQuantity(product.getStockQuantity());
         dto.setSku(product.getSku());
-        dto.setCategoryId(product.getCategory().getId());
-        dto.setCategoryName(product.getCategory().getName());
+        
+        if (product.getCategory()!= null) {
+            dto.setCategoryId(product.getCategory().getId());
+            dto.setCategoryName(product.getCategory().getName());
+        }
+        
         dto.setImageUrl(product.getImageUrl());
         dto.setIsActive(product.getIsActive());
+
+        // [MỚI]
+        dto.setAverageRating(product.getAverageRating());
+        dto.setReviewCount(product.getReviewCount());
+        dto.setSpecifications(product.getSpecifications());
+        dto.setIsFeatured(product.getIsFeatured());
+        
         return dto;
     }
-    
+
+    // Khôi phục phương thức
     private String generateSku() {
         return "SKU-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
