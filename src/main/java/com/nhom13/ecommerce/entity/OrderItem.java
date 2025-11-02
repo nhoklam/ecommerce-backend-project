@@ -34,4 +34,7 @@ public class OrderItem {
     
     @Column(name = "total_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalPrice;
+
+    @Column(name = "refunded_quantity", nullable = false, columnDefinition = "int default 0")
+    private Integer refundedQuantity = 0;
 }

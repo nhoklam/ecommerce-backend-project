@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 import java.util.List;
@@ -57,10 +58,26 @@ public class SecurityConfig {
                             "/api/auth/**",
                             "/api/products/**",
                             "/api/categories/**",
+                            "/api/promotions/active", // Đảm bảo public
+                            "/api/reviews/product/**", // Đảm bảo public
+                            "/api/search/**", // Đảm bảo public
+                            "/api/payments/vnpay_return", // GET, Public (cho trình duyệt)
+                            "/api/payments/vnpay_ipn",    // GET, Public (cho VNPAY server)
+
+
                             "/swagger-ui.html", // Chỉ định file html
                             "/swagger-ui/**",   // Các tài nguyên tĩnh của swagger
                             "/v3/api-docs/**"   // File JSON định nghĩa API
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/refunds").hasRole("CUSTOMER")
+                   .requestMatchers(HttpMethod.GET, "/api/refunds/me").hasRole("CUSTOMER")
+
+                    // ADMIN: Có thể cập nhật status, xem danh sách
+                   .requestMatchers(HttpMethod.PUT, "/api/refunds/{id}/status").hasRole("ADMIN")
+                   .requestMatchers(HttpMethod.GET, "/api/refunds").hasRole("ADMIN")
+
+                    // CHUNG: Cả hai đều có thể xem chi tiết (logic sở hữu được xử lý ở Controller/Service)
+                   .requestMatchers(HttpMethod.GET, "/api/refunds/{id}").hasAnyRole("CUSTOMER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

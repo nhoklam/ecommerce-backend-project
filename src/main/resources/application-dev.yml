@@ -48,3 +48,9 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
 
+vnpay:
+  tmnCode: "YOUR_SANDBOX_TMNCODE"  # Lấy từ VNPAY
+  hashSecret: "YOUR_SANDBOX_HASHSECRET" # Lấy từ VNPAY
+  url: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+  returnUrlBase: "http://localhost:8080/api/payments/vnpay_return"
+  ipnUrlBase: "http://localhost:8080/api/payments/vnpay_ipn" # Cần public (sử dụng ngrok khi test)

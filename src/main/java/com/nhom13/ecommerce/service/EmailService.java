@@ -1,6 +1,8 @@
 package com.nhom13.ecommerce.service;
 
 import com.nhom13.ecommerce.dto.OrderDTO;
+import com.nhom13.ecommerce.entity.RefundRequest;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value; // Đảm bảo @Value được import
@@ -100,4 +102,65 @@ public class EmailService {
             log.error("Failed to send password reset email to: {}", toEmail, e);
         }
     }
+    public void sendRefundConfirmation(String toEmail, RefundRequest refund) {
+    try {
+        SimpleMailMessage message = new SimpleMailMessage(); // [27, 28]
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Refund Request Received - #" + refund.getId());
+        message.setText(buildRefundConfirmationContent(refund));
+
+        mailSender.send(message);
+        log.info("Refund confirmation email sent to: {}", toEmail);
+    } catch (Exception e) {
+        log.error("Failed to send refund confirmation email to: {}", toEmail, e);
+    }
+}
+
+public void sendRefundStatusUpdate(String toEmail, RefundRequest refund) {
+    try {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Refund Status Update - #" + refund.getId());
+        message.setText(buildRefundStatusUpdateContent(refund));
+
+        mailSender.send(message);
+        log.info("Refund status update email sent to: {}", toEmail);
+    } catch (Exception e) {
+        log.error("Failed to send refund status update email to: {}", toEmail, e);
+    }
+}
+
+private String buildRefundConfirmationContent(RefundRequest refund) {
+    // [27]
+    return String.format(
+        "Dear Customer,\n\n" +
+        "We have received your refund request (ID: #%d) for Order ID: #%d.\n" +
+        "Reason: %s\n" +
+        "Total Amount: $%.2f\n" +
+        "Status: %s\n\n" +
+        "Our team will review your request and update you soon.\n\n" +
+        "Best regards,\nE-commerce Team",
+        refund.getId(),
+        refund.getOrder().getId(),
+        refund.getReason(),
+        refund.getTotalRefundAmount(),
+        refund.getStatus()
+    );
+}
+
+private String buildRefundStatusUpdateContent(RefundRequest refund) {
+    return String.format(
+        "Dear Customer,\n\n" +
+        "Your refund request (ID: #%d) for Order ID: #%d has been updated.\n\n" +
+        "New Status: %s\n" +
+        "Admin Notes: %s\n\n" +
+        "Thank you,\nE-commerce Team",
+        refund.getId(),
+        refund.getOrder().getId(),
+        refund.getStatus(),
+        refund.getAdminNotes()!= null? refund.getAdminNotes() : "N/A"
+    );
+}
 }

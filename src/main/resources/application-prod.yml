@@ -56,3 +56,10 @@ logging:
   file:
     # Ghi log ra file để có thể kiểm tra lại khi cần
     name: logs/ecommerce-backend.log
+
+  vnpay:
+    tmnCode: "${VNPAY_TMNCODE}"
+    hashSecret: "${VNPAY_HASHSECRET}"
+    url: "https://vnpayment.vn/paymentv2/vpcpay.html" # URL Production
+    returnUrlBase: "${VNPAY_RETURN_URL_BASE}" # Ví dụ: https://api.yourdomain.com/api/payments/vnpay_return
+    ipnUrlBase: "${VNPAY_IPN_URL_BASE}" # Ví dụ: https://api.yourdomain.com/api/payments/vnpay_ipn

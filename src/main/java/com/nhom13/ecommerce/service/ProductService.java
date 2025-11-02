@@ -124,7 +124,18 @@ public class ProductService {
         product.setStockQuantity(newStock);
         productRepository.save(product);
     }
-    
+    public void restoreStock(Long productId, Integer quantity) {
+    if (quantity <= 0) {
+        return; // Không làm gì nếu số lượng không hợp lệ
+    }
+
+    Product product = productRepository.findById(productId)
+     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+    int newStock = product.getStockQuantity() + quantity;
+    product.setStockQuantity(newStock);
+    productRepository.save(product);
+    }
     // Khôi phục phương thức
     private void mapDtoToEntity(ProductDTO dto, Product product) {
         product.setName(dto.getName());
