@@ -11,7 +11,7 @@ spring:
     hibernate:
       # SỬA LỖI: Đổi từ 'update' sang 'create'
       # 'create' sẽ luôn xóa và tạo lại CSDL, hoàn hảo cho việc test seeder
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -22,10 +22,10 @@ spring:
   # == CẤU HÌNH MAILTRAP CHO SPRING BOOT ==
   # ==========================================================
   mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 2525
-    username: "662fe9690ba83b"
-    password: "ba28fabb8f56a6"
+    host: smtp.gmail.com
+    port: 587 # Cổng cho TLS
+    username: "nhoklam2712005@gmail.com" # <--- Email thật của bạn
+    password: "reljmhgynkctdguj" # <--- Mật khẩu ứng dụng (xem ghi chú)
     properties:
       mail:
         smtp:

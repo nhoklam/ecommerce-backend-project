@@ -118,25 +118,30 @@ public class UserService {
     }
 
     // [MỚI] Logic Quên mật khẩu
-    @Transactional
+   @Transactional
     public void createPasswordResetToken(String email) {
         User user = userRepository.findByEmail(email)
           .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        
+        // SỬA LỖI LOGIC:
+        // 1. Tìm tất cả các token cũ của user
+        List<PasswordResetToken> oldTokens = tokenRepository.findByUser(user);
+        
+        // 2. Xóa các token cũ đó một cách tường minh
+        if (!oldTokens.isEmpty()) {
+            tokenRepository.deleteAll(oldTokens);
+        }
 
-        // Xóa token cũ nếu có
-        tokenRepository.deleteByUser(user);
-
-        // Tạo token mới
+        // 3. Tạo token mới (logic này giữ nguyên)
         String token = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1); // Token_EXPIRATION = 1 giờ
+        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
         PasswordResetToken resetToken = new PasswordResetToken(token, user, expiryDate);
         
         tokenRepository.save(resetToken);
-
-        // Gửi email (non-blocking)
+        
+        // 4. Gửi email
         emailService.sendPasswordResetEmail(user.getEmail(), token);
     }
-
     // [MỚI] Logic Đặt lại mật khẩu
     @Transactional
     public void resetPassword(String token, String newPassword) {

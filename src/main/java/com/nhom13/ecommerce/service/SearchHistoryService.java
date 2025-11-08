@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation; // <--- THÊM IMPORT NÀY
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,16 +15,17 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+// XÓA @Transactional ở cấp độ class
 public class SearchHistoryService {
 
     private final SearchHistoryRepository searchHistoryRepository;
-
-    // Chỉ lưu lại nếu lần tìm kiếm trước cho cùng query này đã cách đây > 5 phút
     private static final long DEBOUNCE_MINUTES = 5;
 
+    // SỬA LỖI Ở ĐÂY:
+    // Thêm (propagation = Propagation.REQUIRES_NEW)
+    // Bắt buộc tạo một giao dịch MỚI (có thể ghi)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void addSearchQuery(User user, String query) {
-        //
         if (query == null || query.trim().isEmpty()) {
             return;
         }
@@ -34,7 +36,7 @@ public class SearchHistoryService {
         if (lastSearch.isPresent()) {
             LocalDateTime lastSearchTime = lastSearch.get().getTimestamp();
             if (lastSearchTime.plusMinutes(DEBOUNCE_MINUTES).isAfter(LocalDateTime.now())) {
-                return; // Bỏ qua nếu tìm kiếm quá gần nhau
+                return;
             }
         }
         
@@ -42,6 +44,7 @@ public class SearchHistoryService {
         searchHistoryRepository.save(newSearch);
     }
 
+    // Thêm @Transactional(readOnly = true) cho hàm đọc
     @Transactional(readOnly = true)
     public List<String> getSearchHistory(Long userId, int limit) {
         return searchHistoryRepository.findRecentQueriesByUserId(userId, PageRequest.of(0, limit));

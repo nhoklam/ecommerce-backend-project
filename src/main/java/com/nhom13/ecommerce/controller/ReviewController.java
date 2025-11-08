@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+// Import mới
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -29,9 +32,15 @@ public class ReviewController {
         return user.getId();
     }
 
-    @PostMapping
-    public ResponseEntity<ReviewDTO> addReview(@Valid @RequestBody ReviewDTO dto, Authentication authentication) {
-        ReviewDTO review = reviewService.addReview(getUserId(authentication), dto);
+    // [THAY ĐỔI] Toàn bộ phương thức addReview
+    @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<ReviewDTO> addReview(
+            @Valid @ModelAttribute ReviewDTO dto, // Dùng @ModelAttribute
+            @RequestParam(value = "image", required = false) MultipartFile image, // Nhận tệp
+            Authentication authentication) {
+        
+        // Truyền DTO và tệp ảnh vào service
+        ReviewDTO review = reviewService.addReview(getUserId(authentication), dto, image);
         return new ResponseEntity<>(review, HttpStatus.CREATED);
     }
 

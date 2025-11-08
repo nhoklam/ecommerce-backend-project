@@ -16,6 +16,8 @@ public class MailConfig {
      * to prevent the application from failing to start if mail properties are not set.
      * This bean will NOT be used when the 'prod' profile is active.
      */
+     
+    /* // VÔ HIỆU HÓA BEAN NÀY ĐỂ SỬ DỤNG CẤU HÌNH TỪ .YML
     @Bean
     @Profile("!prod") // Active for any profile *except* 'prod'
     public JavaMailSender devJavaMailSender() {
@@ -25,7 +27,6 @@ public class MailConfig {
         mailSender.setPort(1025); // Common port for mock mail servers like MailHog
         mailSender.setUsername("mockuser");
         mailSender.setPassword("mockpass");
-        
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         
@@ -34,4 +35,5 @@ public class MailConfig {
         
         return mailSender;
     }
+    */
 }

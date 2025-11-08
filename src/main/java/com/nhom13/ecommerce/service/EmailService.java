@@ -87,7 +87,8 @@ public class EmailService {
             message.setSubject("Yêu cầu Đặt lại Mật khẩu E-commerce");
             
             // CHÚ Ý: Trong production, hãy trỏ URL này đến frontend của bạn
-            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+            // Trỏ đến trang web trung gian của bạn
+            String resetUrl = "http://localhost:8081/reset-password?token=" + token;
 
             message.setText("Chào bạn,\n\n"
                 + "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n"

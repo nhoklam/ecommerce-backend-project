@@ -63,7 +63,7 @@ public class SecurityConfig {
                             "/api/search/**", // Đảm bảo public
                             "/api/payments/vnpay_return", // GET, Public (cho trình duyệt)
                             "/api/payments/vnpay_ipn",    // GET, Public (cho VNPAY server)
-
+                            "/api/files/download/**",
 
                             "/swagger-ui.html", // Chỉ định file html
                             "/swagger-ui/**",   // Các tài nguyên tĩnh của swagger
