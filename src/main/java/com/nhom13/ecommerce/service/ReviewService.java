@@ -10,11 +10,16 @@ import com.nhom13.ecommerce.repository.ProductRepository;
 import com.nhom13.ecommerce.repository.ReviewRepository;
 import com.nhom13.ecommerce.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.HashMap;
+import java.util.Map;
+
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile; // Import cho file upload
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -24,37 +29,25 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
-    private final FileStorageService fileStorageService; // Inject FileStorageService
+    private final FileStorageService fileStorageService;
 
-    /**
-     * Thêm đánh giá mới, có hỗ trợ upload ảnh.
-     *
-     * @param userId ID của người dùng
-     * @param dto DTO chứa thông tin (productId, rating, comment)
-     * @param imageFile Tệp ảnh (có thể là null)
-     * @return ReviewDTO đã được tạo
-     */
-    // [THAY ĐỔI] Thêm tham số MultipartFile imageFile
+    // ADD REVIEW
     public ReviewDTO addReview(Long userId, ReviewDTO dto, MultipartFile imageFile) {
         User user = userRepository.findById(userId)
-          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Product product = productRepository.findById(dto.getProductId())
-          .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        // 1. Kiểm tra xem đã review chưa
         if (reviewRepository.existsByUserIdAndProductId(userId, dto.getProductId())) {
             throw new BadRequestException("You have already reviewed this product");
         }
 
-        // 2. Kiểm tra xem đã mua (và nhận) hàng chưa
         if (!reviewRepository.didUserPurchaseProduct(userId, dto.getProductId())) {
             throw new BadRequestException("You must purchase and receive the product to review it");
         }
 
-        // 3. [MỚI] Xử lý upload file ảnh
         String fileName = null;
         if (imageFile != null && !imageFile.isEmpty()) {
-            // Lưu file vào thư mục 'uploads' và lấy tên file duy nhất
             fileName = fileStorageService.storeFile(imageFile);
         }
 
@@ -63,79 +56,92 @@ public class ReviewService {
         review.setProduct(product);
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
-        review.setImageUrl(fileName); // [MỚI] Gán tên file đã lưu (hoặc null)
+        review.setImageUrl(fileName);
 
         Review savedReview = reviewRepository.save(review);
-        
-        // 4. Cập nhật rating trung bình cho sản phẩm
         updateProductAverageRating(dto.getProductId());
 
         return convertToDTO(savedReview);
     }
 
-    /**
-     * Lấy danh sách đánh giá cho một sản phẩm (có phân trang).
-     */
+    // GET REVIEWS FOR PRODUCT (FIXED: Use fetch join)
     @Transactional(readOnly = true)
     public Page<ReviewDTO> getReviewsForProduct(Long productId, Pageable pageable) {
-        return reviewRepository.findByProductId(productId, pageable)
-          .map(this::convertToDTO);
+        return reviewRepository.findByProductIdWithUser(productId, pageable)
+                .map(this::convertToDTO);
     }
 
-    /**
-     * Xóa một đánh giá (chỉ chủ sở hữu mới được xóa).
-     */
+    // DELETE REVIEW
     public void deleteReview(Long reviewId, Long userId) {
         Review review = reviewRepository.findById(reviewId)
-          .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
+
         if (!review.getUser().getId().equals(userId)) {
             throw new BadRequestException("You can only delete your own reviews");
         }
 
         Long productId = review.getProduct().getId();
 
-        // [MỚI] Xóa tệp ảnh liên quan (nếu có) khỏi thư mục 'uploads'
         if (review.getImageUrl() != null && !review.getImageUrl().isEmpty()) {
-             fileStorageService.deleteFile(review.getImageUrl());
+            fileStorageService.deleteFile(review.getImageUrl());
         }
 
         reviewRepository.delete(review);
-        
-        // Cập nhật lại rating sau khi xóa
         updateProductAverageRating(productId);
     }
 
-    /**
-     * Hàm helper để tính toán và cập nhật rating trung bình
-     * và tổng số review cho một sản phẩm.
-     */
+    // UPDATE PRODUCT RATING
     private void updateProductAverageRating(Long productId) {
         Product product = productRepository.findById(productId)
-          .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
         Double averageRating = reviewRepository.calculateAverageRating(productId);
         long reviewCount = reviewRepository.countByProductId(productId);
 
         product.setAverageRating(averageRating != null ? averageRating : 0.0);
         product.setReviewCount((int) reviewCount);
-        
         productRepository.save(product);
     }
 
-    /**
-     * Hàm helper để chuyển đổi Entity (Review) sang DTO (ReviewDTO).
-     */
+    // CONVERT ENTITY TO DTO (SAFE: Null protection)
     private ReviewDTO convertToDTO(Review entity) {
         ReviewDTO dto = new ReviewDTO();
         dto.setId(entity.getId());
         dto.setProductId(entity.getProduct().getId());
-        dto.setUserId(entity.getUser().getId());
-        dto.setUserFullName(entity.getUser().getFirstName() + " " + entity.getUser().getLastName());
+
+        User user = entity.getUser();
+        if (user != null) {
+            dto.setUserId(user.getId());
+            dto.setUserFullName(user.getFirstName() + " " + user.getLastName());
+        } else {
+            dto.setUserId(null);
+            dto.setUserFullName("Khách");
+        }
+
         dto.setRating(entity.getRating());
         dto.setComment(entity.getComment());
-        dto.setImageUrl(entity.getImageUrl());
+        dto.setImageUrl(entity.getImageUrl()); // ddbc4ccc-18a0-4bb7-a3b4-1bea8541f582.png
         dto.setCreatedAt(entity.getCreatedAt());
         return dto;
     }
+
+    @Transactional(readOnly = true)
+    public Page<ReviewDTO> getReviewsForProductByRating(Long productId, int rating, Pageable pageable) {
+        return reviewRepository.findByProductIdAndRatingWithUser(productId, rating, pageable)
+                .map(this::convertToDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Integer, Long> getRatingStats(Long productId) {
+        Map<Integer, Long> stats = new HashMap<>();
+        for (int i = 1; i <= 5; i++) {
+            stats.put(i, reviewRepository.countByProductIdAndRating(productId, i));
+        }
+        return stats;
+    }
+    public Double getAverageRating(Long productId) {
+    return reviewRepository.calculateAverageRating(productId);
+}
+
+
 }

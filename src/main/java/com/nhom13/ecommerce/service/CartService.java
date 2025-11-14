@@ -3,11 +3,12 @@ package com.nhom13.ecommerce.service;
 import com.nhom13.ecommerce.dto.CartItemDTO;
 import com.nhom13.ecommerce.entity.CartItem;
 import com.nhom13.ecommerce.entity.Product;
+import com.nhom13.ecommerce.entity.ProductVariant;
 import com.nhom13.ecommerce.entity.User;
 import com.nhom13.ecommerce.exception.BadRequestException;
 import com.nhom13.ecommerce.exception.ResourceNotFoundException;
 import com.nhom13.ecommerce.repository.CartItemRepository;
-import com.nhom13.ecommerce.repository.ProductRepository;
+import com.nhom13.ecommerce.repository.ProductVariantRepository;
 import com.nhom13.ecommerce.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,40 +25,44 @@ import java.util.stream.Collectors;
 public class CartService {
     
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository; // Sửa: Dùng ProductVariantRepository
     private final UserRepository userRepository;
     
-    public CartItemDTO addToCart(Long userId, Long productId, Integer quantity) {
+    // Sửa: Nhận vào productVariantId thay vì productId
+    public CartItemDTO addToCart(Long userId, Long productVariantId, Integer quantity) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
-        Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+        ProductVariant variant = productVariantRepository.findById(productVariantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product Variant not found with id: " + productVariantId));
         
-        if (!product.getIsActive()) {
+        if (!variant.getProduct().getIsActive()) {
             throw new BadRequestException("Product is not available");
         }
         
-        if (product.getStockQuantity() < quantity) {
-            throw new BadRequestException("Insufficient stock. Available: " + product.getStockQuantity());
+        // Sửa: Kiểm tra kho của biến thể
+        if (variant.getStockQuantity() < quantity) {
+            throw new BadRequestException("Insufficient stock. Available: " + variant.getStockQuantity());
         }
         
-        Optional<CartItem> existingItem = cartItemRepository.findByUserIdAndProductId(userId, productId);
+        // Sửa: Tìm CartItem theo userId và productVariantId
+        Optional<CartItem> existingItem = cartItemRepository.findByUserIdAndProductVariantId(userId, productVariantId);
         
         CartItem cartItem;
         if (existingItem.isPresent()) {
             cartItem = existingItem.get();
             int newQuantity = cartItem.getQuantity() + quantity;
             
-            if (product.getStockQuantity() < newQuantity) {
-                throw new BadRequestException("Insufficient stock. Available: " + product.getStockQuantity());
+            // Sửa: Kiểm tra lại kho của biến thể
+            if (variant.getStockQuantity() < newQuantity) {
+                throw new BadRequestException("Insufficient stock. Available: " + variant.getStockQuantity());
             }
             
             cartItem.setQuantity(newQuantity);
         } else {
             cartItem = new CartItem();
             cartItem.setUser(user);
-            cartItem.setProduct(product);
+            cartItem.setProductVariant(variant); // Sửa: Gán productVariant
             cartItem.setQuantity(quantity);
         }
         
@@ -73,8 +78,9 @@ public class CartService {
             throw new BadRequestException("Cart item does not belong to user");
         }
         
-        if (cartItem.getProduct().getStockQuantity() < quantity) {
-            throw new BadRequestException("Insufficient stock. Available: " + cartItem.getProduct().getStockQuantity());
+        // Sửa: Kiểm tra kho của biến thể
+        if (cartItem.getProductVariant().getStockQuantity() < quantity) {
+            throw new BadRequestException("Insufficient stock. Available: " + cartItem.getProductVariant().getStockQuantity());
         }
         
         cartItem.setQuantity(quantity);
@@ -103,23 +109,42 @@ public class CartService {
     
     @Transactional(readOnly = true)
     public BigDecimal getCartTotal(Long userId) {
-        BigDecimal total = cartItemRepository.calculateCartTotal(userId);
-        return total != null ? total : BigDecimal.ZERO;
+        List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return cartItems.stream()
+            .map(this::calculateItemTotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
     
+    private BigDecimal calculateItemTotal(CartItem cartItem) {
+        ProductVariant variant = cartItem.getProductVariant();
+        BigDecimal price = variant.getPrice() != null ? variant.getPrice() : variant.getProduct().getPrice();
+        return price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+    }
+
     public void clearCart(Long userId) {
         cartItemRepository.deleteAllByUserId(userId);
     }
     
     private CartItemDTO convertToDTO(CartItem cartItem) {
         CartItemDTO dto = new CartItemDTO();
+        ProductVariant variant = cartItem.getProductVariant();
+        Product product = variant.getProduct();
+
         dto.setId(cartItem.getId());
-        dto.setProductId(cartItem.getProduct().getId());
-        dto.setProductName(cartItem.getProduct().getName());
-        dto.setUnitPrice(cartItem.getProduct().getPrice());
+        dto.setProductId(product.getId());
+        dto.setProductVariantId(variant.getId());
+        dto.setProductName(product.getName());
         dto.setQuantity(cartItem.getQuantity());
-        dto.setTotalPrice(cartItem.getProduct().getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-        dto.setImageUrl(cartItem.getProduct().getImageUrl());
+
+        // Ưu tiên thông tin của variant, nếu không có thì lấy của product
+        BigDecimal unitPrice = variant.getPrice() != null ? variant.getPrice() : product.getPrice();
+        String imageUrl = variant.getImageUrl() != null ? variant.getImageUrl() : product.getImageUrl();
+        dto.setColor(variant.getColor());
+        dto.setSize(variant.getProductSize());
+
+        dto.setUnitPrice(unitPrice);
+        dto.setTotalPrice(unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+        dto.setImageUrl(imageUrl);
         return dto;
     }
 }

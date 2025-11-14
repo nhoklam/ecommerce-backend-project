@@ -34,9 +34,9 @@ public class WishlistController {
 
     @PostMapping("/{productId}")
     public ResponseEntity<Map<String, String>> addToWishlist(
-            @PathVariable Long productId, 
+            @PathVariable Long productId,
             Authentication authentication) {
-        
+
         wishlistService.addToWishlist(getUserId(authentication), productId);
         return new ResponseEntity<>(Map.of("message", "Product added to wishlist"), HttpStatus.CREATED);
     }
@@ -45,8 +45,15 @@ public class WishlistController {
     public ResponseEntity<Void> removeFromWishlist(
             @PathVariable Long productId,
             Authentication authentication) {
-        
+
         wishlistService.removeFromWishlist(getUserId(authentication), productId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Integer>> getWishlistCount(Authentication authentication) {
+        UserDTO user = userService.getUserByEmail(authentication.getName());
+        int count = wishlistService.getWishlistCount(user.getId());
+        return ResponseEntity.ok(Map.of("count", count));
     }
 }

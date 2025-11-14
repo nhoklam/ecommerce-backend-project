@@ -1,6 +1,7 @@
 package com.nhom13.ecommerce.dto;
 
 import com.nhom13.ecommerce.entity.OrderItem;
+import com.nhom13.ecommerce.entity.Product;
 import com.nhom13.ecommerce.entity.RefundItem;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -14,7 +15,6 @@ public class RefundItemResponseDTO {
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
 
-    // Helper mapper
     public static RefundItemResponseDTO fromEntity(RefundItem entity) {
         RefundItemResponseDTO dto = new RefundItemResponseDTO();
         dto.setRefundItemId(entity.getId());
@@ -22,7 +22,11 @@ public class RefundItemResponseDTO {
 
         OrderItem orderItem = entity.getOrderItem();
         dto.setOrderItemId(orderItem.getId());
-        dto.setProductName(orderItem.getProduct().getName());
+        
+        // [SỬA] Lấy thông tin sản phẩm cha từ biến thể
+        Product product = orderItem.getProductVariant().getProduct();
+        dto.setProductName(product.getName());
+        
         dto.setUnitPrice(orderItem.getUnitPrice());
         dto.setTotalPrice(orderItem.getUnitPrice().multiply(BigDecimal.valueOf(entity.getQuantity())));
 

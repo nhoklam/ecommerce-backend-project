@@ -11,13 +11,14 @@ spring:
     hibernate:
       # SỬA LỖI: Đổi từ 'update' sang 'create'
       # 'create' sẽ luôn xóa và tạo lại CSDL, hoàn hảo cho việc test seeder
+      # ddl-auto: update
       ddl-auto: update
     show-sql: true
-    properties:
+    properties: 
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect 
-  
+        dialect: org.hibernate.dialect.MySQLDialect
+
   # ==========================================================
   # == CẤU HÌNH MAILTRAP CHO SPRING BOOT ==
   # ==========================================================
@@ -49,8 +50,11 @@ logging:
     org.hibernate.SQL: DEBUG
 
 vnpay:
-  tmnCode: "YOUR_SANDBOX_TMNCODE"  # Lấy từ VNPAY
-  hashSecret: "YOUR_SANDBOX_HASHSECRET" # Lấy từ VNPAY
+  tmnCode: "9WXOUA4B"
+  hashSecret: "N6HX13PQHKAA7EY8LYCD3IJIJ3A2ZNI1"
   url: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
-  returnUrlBase: "http://localhost:8080/api/payments/vnpay_return"
-  ipnUrlBase: "http://localhost:8080/api/payments/vnpay_ipn" # Cần public (sử dụng ngrok khi test)
+  # SỬA DÒNG NÀY: Dùng ngrok URL cho Return URL
+  returnUrlBase: "https://maile-autographical-maribeth.ngrok-free.dev/api/payments/vnpay_return" 
+  ipnUrlBase: "https://maile-autographical-maribeth.ngrok-free.dev/api/payments/vnpay_ipn"
+
+

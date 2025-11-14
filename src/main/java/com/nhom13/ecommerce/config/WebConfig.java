@@ -1,22 +1,20 @@
 package com.nhom13.ecommerce.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Paths;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    /*
-     * Chúng ta sẽ quản lý CORS trong SecurityConfig để tránh xung đột.
-     * Vì vậy, phương thức này sẽ được comment lại.
-     */
-    // @Override
-    // public void addCorsMappings(CorsRegistry registry) {
-    //     registry.addMapping("/api/**")
-    //             .allowedOriginPatterns("*")
-    //             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-    //             .allowedHeaders("*")
-    //             .allowCredentials(true);
-    // }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String uploadDir = Paths.get("uploads").toAbsolutePath().toUri().toString();
+
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadDir)
+                .setCachePeriod(3600);
+    }
 }

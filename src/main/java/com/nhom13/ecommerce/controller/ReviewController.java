@@ -4,8 +4,13 @@ import com.nhom13.ecommerce.dto.ReviewDTO;
 import com.nhom13.ecommerce.dto.UserDTO;
 import com.nhom13.ecommerce.service.ReviewService;
 import com.nhom13.ecommerce.service.UserService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,12 +38,12 @@ public class ReviewController {
     }
 
     // [THAY ĐỔI] Toàn bộ phương thức addReview
-    @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ReviewDTO> addReview(
             @Valid @ModelAttribute ReviewDTO dto, // Dùng @ModelAttribute
             @RequestParam(value = "image", required = false) MultipartFile image, // Nhận tệp
             Authentication authentication) {
-        
+
         // Truyền DTO và tệp ảnh vào service
         ReviewDTO review = reviewService.addReview(getUserId(authentication), dto, image);
         return new ResponseEntity<>(review, HttpStatus.CREATED);
@@ -48,10 +53,17 @@ public class ReviewController {
     public ResponseEntity<Page<ReviewDTO>> getProductReviews(
             @PathVariable Long productId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
-        
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) Integer rating) { // thêm rating
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<ReviewDTO> reviews = reviewService.getReviewsForProduct(productId, pageable);
+
+        Page<ReviewDTO> reviews;
+        if (rating != null) {
+            reviews = reviewService.getReviewsForProductByRating(productId, rating, pageable);
+        } else {
+            reviews = reviewService.getReviewsForProduct(productId, pageable);
+        }
         return ResponseEntity.ok(reviews);
     }
 
@@ -60,4 +72,17 @@ public class ReviewController {
         reviewService.deleteReview(reviewId, getUserId(authentication));
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/product/{productId}/stats")
+    public ResponseEntity<Map<Integer, Long>> getRatingStats(@PathVariable Long productId) {
+        Map<Integer, Long> stats = reviewService.getRatingStats(productId);
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/product/{productId}/average")
+    public ResponseEntity<Double> getAverageRating(@PathVariable Long productId) {
+        Double avg = reviewService.getAverageRating(productId);
+        return ResponseEntity.ok(avg);
+    }
+
 }

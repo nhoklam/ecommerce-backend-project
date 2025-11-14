@@ -51,37 +51,44 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                            "/api/auth/**",
-                            "/api/products/**",
-                            "/api/categories/**",
-                            "/api/promotions/active", // Đảm bảo public
-                            "/api/reviews/product/**", // Đảm bảo public
-                            "/api/search/**", // Đảm bảo public
-                            "/api/payments/vnpay_return", // GET, Public (cho trình duyệt)
-                            "/api/payments/vnpay_ipn",    // GET, Public (cho VNPAY server)
-                            "/api/files/download/**",
-
-                            "/swagger-ui.html", // Chỉ định file html
-                            "/swagger-ui/**",   // Các tài nguyên tĩnh của swagger
-                            "/v3/api-docs/**"   // File JSON định nghĩa API
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/refunds").hasRole("CUSTOMER")
-                   .requestMatchers(HttpMethod.GET, "/api/refunds/me").hasRole("CUSTOMER")
-
-                    // ADMIN: Có thể cập nhật status, xem danh sách
-                   .requestMatchers(HttpMethod.PUT, "/api/refunds/{id}/status").hasRole("ADMIN")
-                   .requestMatchers(HttpMethod.GET, "/api/refunds").hasRole("ADMIN")
-
-                    // CHUNG: Cả hai đều có thể xem chi tiết (logic sở hữu được xử lý ở Controller/Service)
-                   .requestMatchers(HttpMethod.GET, "/api/refunds/{id}").hasAnyRole("CUSTOMER", "ADMIN")
-                        .anyRequest().authenticated()
+                // Public APIs
+                .requestMatchers(
+                        "/", // Đã thêm
+                        "/favicon.ico", // Đã thêm
+                        "/api/auth/**",
+                        "/api/categories/**",
+                        "/api/promotions/active",
+                        "/api/reviews/product/**",
+                        "/api/search/**",
+                        "/api/payments/vnpay_return",
+                        "/api/payments/vnpay_ipn",
+                        "/api/files/download/**",
+                        "/uploads/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
+                ).permitAll()
+                // Product: chỉ GET là public
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                // Refund
+                .requestMatchers(HttpMethod.POST, "/api/refunds").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.GET, "/api/refunds/me").hasRole("CUSTOMER")
+                .requestMatchers(HttpMethod.PUT, "/api/refunds/{id}/status").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/refunds").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/refunds/{id}").hasAnyRole("CUSTOMER", "ADMIN")
+                // Payment [SỬA ĐỔI]
+                .requestMatchers(HttpMethod.POST, "/api/payments/create").hasRole("CUSTOMER") // <-- SỬA Ở ĐÂY
+                .anyRequest().authenticated()
+                
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -92,7 +99,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*")); // SỬ DỤNG PATTERNS
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

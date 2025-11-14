@@ -30,11 +30,11 @@ public class WishlistService {
     @Transactional(readOnly = true)
     public WishlistDTO getWishlist(Long userId) {
         List<WishlistItem> items = wishlistItemRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        
+
         List<ProductDTO> products = items.stream()
-           .map(WishlistItem::getProduct)
-           .map(productService::convertToDTO) // Tái sử dụng mapper của ProductService
-           .collect(Collectors.toList());
+                .map(WishlistItem::getProduct)
+                .map(productService::convertToDTO) // Tái sử dụng mapper của ProductService
+                .collect(Collectors.toList());
 
         WishlistDTO dto = new WishlistDTO();
         dto.setProducts(products);
@@ -48,9 +48,9 @@ public class WishlistService {
         }
 
         User user = userRepository.findById(userId)
-           .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Product product = productRepository.findById(productId)
-           .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         WishlistItem item = new WishlistItem(user, product);
         wishlistItemRepository.save(item);
@@ -58,8 +58,13 @@ public class WishlistService {
 
     public void removeFromWishlist(Long userId, Long productId) {
         WishlistItem item = wishlistItemRepository.findByUserIdAndProductId(userId, productId)
-           .orElseThrow(() -> new ResourceNotFoundException("Product not found in wishlist"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found in wishlist"));
+
         wishlistItemRepository.delete(item);
+    }
+
+    @Transactional(readOnly = true)
+    public int getWishlistCount(Long userId) {
+        return wishlistItemRepository.countByUserId(userId);
     }
 }

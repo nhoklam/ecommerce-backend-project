@@ -6,10 +6,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+// [MỚI] Thêm import cho ProductVariant
+import com.nhom13.ecommerce.entity.ProductVariant;
+
 @Entity
-// SỬA LỖI:
-// 1. Xóa uniqueConstraints để Service xử lý logic, tránh lỗi DB với giá trị NULL.
-// 2. Thêm Indexes để tăng tốc độ truy vấn cho cả user và guest.
 @Table(name = "cart_items",
     indexes = {
         @Index(name = "idx_cartitem_user_id", columnList = "user_id"),
@@ -23,18 +23,22 @@ import lombok.NoArgsConstructor;
 public class CartItem extends BaseEntity {
     
     @ManyToOne(fetch = FetchType.LAZY)
-    // SỬA LỖI: Cho phép user_id là NULL (nullable = true) để hỗ trợ giỏ hàng của guest
     @JoinColumn(name = "user_id", nullable = true) 
     private User user;
     
+    // [XÓA] Đã loại bỏ mối quan hệ trực tiếp với Product
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "product_id", nullable = false)
+    // private Product product;
+
+    // [THAY THẾ] Một CartItem bây giờ sẽ trỏ đến một ProductVariant cụ thể
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "product_variant_id", nullable = false)
+    private ProductVariant productVariant;
     
     @Column(nullable = false)
     private Integer quantity;
 
-    // SỬA LỖI: Thêm trường tempCartId để lưu giỏ hàng của guest
     @Column(name = "tempCartId")
     private String tempCartId;
 }

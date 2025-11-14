@@ -10,9 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-// import java.util.Set; // [ĐÃ XÓA]
+import java.util.List; // [SỬA] Import List thay vì Collections
 
 @Entity
 @Table(name = "users")
@@ -50,20 +48,18 @@ public class User extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CartItem> cartItems;
 
-    // [MỚI] Thêm liên kết đến Address
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Address> addresses;
-    
-    // --- UserDetails Implementation ---
 
+    // --- UserDetails Implementation ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        // ✅ Thêm prefix ROLE_ để Spring Security hiểu đúng quyền
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
     public String getUsername() {
-        // Trả về email vì chúng ta dùng email để đăng nhập
         return email;
     }
 
@@ -85,5 +81,13 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return this.isActive;
+    }
+
+    // --- Các phương thức tự định nghĩa ---
+    @Transient
+    public String getFullName() {
+        String first = (this.firstName != null) ? this.firstName : "";
+        String last = (this.lastName != null) ? this.lastName : "";
+        return (first + " " + last).trim();
     }
 }

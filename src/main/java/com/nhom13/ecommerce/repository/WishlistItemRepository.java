@@ -15,4 +15,5 @@ public interface WishlistItemRepository extends JpaRepository<WishlistItem, Long
     Optional<WishlistItem> findByUserIdAndProductId(Long userId, Long productId);
     
     boolean existsByUserIdAndProductId(Long userId, Long productId);
+    int countByUserId(Long userId);
 }
